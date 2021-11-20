@@ -1,6 +1,7 @@
 import cv2
 import pytesseract
 from re import sub
+import re
 from decimal import Decimal
 
 # list if transaction after being filtered
@@ -19,14 +20,23 @@ sortby_type_dict = {
     }
 
 }
+startIndex = 0
 
+
+# start index of non date
 # takes in string obtain from openCV and put into list???
 def filter_string_to_list(unfilteredString):
+    pattern = '\d\d\/\d\d\d\d'
+    foundindex = False
     for index, value in enumerate(unfilteredString):
-        value = value.split(' ')
-        if (len(value) != 1):
-            #print("adding to filteredList")
+        if (len(value) != 0):
+            currentword = re.findall(pattern, value)
+            if (len(currentword) == 0 and foundindex is False):
+                foundindex = True
+                global startIndex
+                startIndex = int(index / 2)
             filteredList.append(value)
+
 
 # take filteredList and breaks down into dict
 def insert_into_dict(listItem):
@@ -44,14 +54,15 @@ def insert_into_dict(listItem):
         }
         i += 1
 
+
 # takes dict and sorts it into buy / sell dict
 def sort_by_type(list):
     buycount = 0
     sellcount = 0
     for item in list:
         for index, value in enumerate(list[item]):
-            if(value == 'coin'):
-                if(list[item]['buy/sell'] == 'Buy'):
+            if (value == 'coin'):
+                if (list[item]['buy/sell'] == 'Buy'):
                     buycount += 1
                     buykey = sortby_type_dict['buy']
                     buykey[buycount] = list[item]
@@ -60,25 +71,27 @@ def sort_by_type(list):
                     sellkey = sortby_type_dict['sell']
                     sellkey[sellcount] = list[item]
 
+
 def calculate_total_by_type(dict, type):
     tempTotal = 0
-    if(type == 'buy'):
+    if (type == 'buy'):
         for item in dict:
-            for index,value in enumerate(dict[item]):
+            for index, value in enumerate(dict[item]):
                 tempindex = dict[item]
-                if(value == 'cost'):
+                if (value == 'cost'):
                     converted_cost = Decimal(sub(r'[^\d.]', '', tempindex[value]))
                     tempTotal += converted_cost
         return tempTotal
 
-    if(type == 'sell'):
+    if (type == 'sell'):
         for item in dict:
-            for index,value in enumerate(dict[item]):
+            for index, value in enumerate(dict[item]):
                 tempindex = dict[item]
-                if(value == 'cost'):
+                if (value == 'cost'):
                     converted_cost = Decimal(sub(r'[^\d.]', '', tempindex[value]))
                     tempTotal += converted_cost
         return tempTotal
+
 
 def getImage():
     print("Available Sample: 2lines, 3lines, 4lines, wide2, wide3, wide4, bigsample")
@@ -87,37 +100,36 @@ def getImage():
     print(link)
     return link
 
+
 def printResults():
     print(f"Net Profit / Loss:  \n${netProfit}")
     print(f"Net Profit Margin / loss:  \n{round(netProfitMargin, 2)}%")
     print(f"Profit Percentage / loss: \n{round(profitPercentage, 2)}%")
 
 
-###----------------------------------------MAIN CODE?------------------------------------------
+#  Tn = a + (n-1)d; can get any value from image with row and column
+def math_shit(column, row):
+    index = row + (column - 1) * startIndex
+    return index
+
+# places items into list where each item in list is a row in the image
+def iterate_shit():
+    for i in range(startIndex):
+        for x in range(1, 9):
+            print(filteredList[math_shit(x,i)])
+
+
+
+# ---------------------------------------MAIN CODE?------------------------------------------
 
 # setting configs
 pytesseract.pytesseract.cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-img = cv2.imread(getImage())
-img = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+img = cv2.imread('./sampleImages/4lines.png')
+img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
 img_to_string = pytesseract.image_to_string(img)
 string_split = img_to_string.splitlines()
 
 # functions calling my mom
 filter_string_to_list(string_split)
-insert_into_dict(filteredList)
-sort_by_type(key_value_dict)
-cost = calculate_total_by_type(sortby_type_dict['buy'], 'buy')
-revenue = calculate_total_by_type(sortby_type_dict['sell'], 'sell')
-
-# profits calculations
-netProfit = revenue - cost
-netProfitMargin = netProfit / revenue
-profitPercentage = netProfit / cost
-
-printResults()
-
-
-
-
-
+iterate_shit()

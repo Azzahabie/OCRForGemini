@@ -21,21 +21,35 @@ sortby_type_dict = {
 
 }
 startIndex = 0
+rowAndColumnList = []
 
-
-# start index of non date
-# takes in string obtain from openCV and put into list???
-def filter_string_to_list(unfilteredString):
+# takes in unfilteredString from image scan -> filter out empty values -> find start index of non date to determine
+# the amount of rows there are in the image
+def filter_imgstring_to_list(unfilteredString):
     pattern = '\d\d\/\d\d\d\d'
     foundindex = False
     for index, value in enumerate(unfilteredString):
-        if (len(value) != 0):
+        if (re.search('[a-zA-Z0-9]', value)):
             currentword = re.findall(pattern, value)
             if (len(currentword) == 0 and foundindex is False):
                 foundindex = True
                 global startIndex
                 startIndex = int(index / 2)
             filteredList.append(value)
+
+
+#  Tn = a + (n-1)d; can get any value from image with row and column
+def math_shit(column, row):
+    index = row + (column - 1) * startIndex
+    return index
+
+# places items into list where each item in list is a row in the image
+def iterate_shit():
+    for i in range(startIndex):
+        templist = []
+        for x in range(1, 9):
+           templist.append(filteredList[math_shit(x,i)])
+        rowAndColumnList.append(templist)
 
 
 # take filteredList and breaks down into dict
@@ -107,29 +121,17 @@ def printResults():
     print(f"Profit Percentage / loss: \n{round(profitPercentage, 2)}%")
 
 
-#  Tn = a + (n-1)d; can get any value from image with row and column
-def math_shit(column, row):
-    index = row + (column - 1) * startIndex
-    return index
-
-# places items into list where each item in list is a row in the image
-def iterate_shit():
-    for i in range(startIndex):
-        for x in range(1, 9):
-            print(filteredList[math_shit(x,i)])
-
-
-
 # ---------------------------------------MAIN CODE?------------------------------------------
 
 # setting configs
 pytesseract.pytesseract.cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-img = cv2.imread('./sampleImages/4lines.png')
+img = cv2.imread('./sampleImages/bigsample.png')
 img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
 img_to_string = pytesseract.image_to_string(img)
-string_split = img_to_string.splitlines()
+imgString_Split = img_to_string.splitlines()
 
 # functions calling my mom
-filter_string_to_list(string_split)
+filter_imgstring_to_list(imgString_Split)
 iterate_shit()
+print(rowAndColumnList)
